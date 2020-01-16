@@ -1,8 +1,7 @@
 image: rakudo-star:latest
 
 stages:
-  - do-install
-  - do-test
+  - do-install-and-test
 
 before_script:
   - perl6 --version
@@ -12,16 +11,10 @@ before_script:
   - zef uninstall HTTP::UserAgent
   - zef --version
 
-install-http-useragent:
-  stage: do-install
+http-useragent:
+  stage: do-install-and-test
   script:
     - zef install .
-  only:
-    - keepalive_dev
-
-test-http-useragent:
-  stage: do-test
-  script:
     - prove6 ./t
   only:
     - keepalive_dev
