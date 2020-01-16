@@ -1,4 +1,4 @@
-# HTTP::UserAgent
+# HTTP::UserAgent [![Build Status](https://travis-ci.org/sergot/http-useragent.svg?branch=master)](https://travis-ci.org/sergot/http-useragent)
 Web user agent class for Raku (formerly known as Perl 6).
 
 
