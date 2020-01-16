@@ -14,7 +14,6 @@ use MIME::Base64;
 
 constant CRLF = Buf.new(13, 10);
 
-
 # placeholder role to make signatures nicer
 # and enable greater abstraction
 role Connection {
@@ -43,6 +42,7 @@ has $.redirects-in-a-row;
 has Bool $.throw-exceptions;
 has $.debug;
 has IO::Handle $.debug-handle;
+has @.connections;
 
 my sub search-header-end(Blob $input) {
     my $i = 0;
@@ -141,8 +141,15 @@ multi method delete(Str $uri is copy, Bool :$bin,  *%header ) {
     self.delete(URI.new(_clear-url($uri)), :$bin, |%header);
 }
 
-method request(HTTP::Request $request, Bool :$bin) returns HTTP::Response {
+method request(
+    HTTP::Request $request,
+    Bool :$bin,
+    Str  :$conn_name?
+) returns HTTP::Response {
+    my %stored_conn;
+
     my HTTP::Response $response;
+    my Connection     $conn;
 
     # add cookies to the request
     $request.add-cookies($.cookies);
@@ -153,12 +160,24 @@ method request(HTTP::Request $request, Bool :$bin) returns HTTP::Response {
     # if auth has been provided add it to the request
     self.setup-auth($request);
     $.debug-handle.say("==>>Send\n" ~ $request.Str(:debug)) if $.debug;
-    my Connection $conn = self.get-connection($request);
+
+    if $conn_name.defined {
+        %stored_conn = self.fetch_connection( name => $conn_name );
+
+        X::HTTP::Response.new(
+            :rc('No active connection <' ~ $conn_name ~ '> is stored')
+        ).throw unless %stored_conn;
+
+        $conn = %stored_conn<conn>;
+    }
+    else {
+        $conn = self.get-connection($request);
+    }
 
     if $conn.send-request($request) {
          $response = self.get-response($request, $conn, :$bin);
     }
-    $conn.close;
+    $conn.close unless $conn_name.defined;
 
     X::HTTP::Response.new(:rc('No response')).throw unless $response;
 
@@ -441,6 +460,66 @@ method setup-auth(HTTP::Request $request) {
 
 method use-auth(HTTP::Request $request) {
     $!auth_login.defined && $!auth_password.defined;
+}
+
+method store_connection(
+    Str :$name,
+    HTTP::Request :$request,
+    Connection :$conn
+) returns UInt {
+    @!connections.push(
+        %(
+            name => $name,
+            conn => $conn,
+        ),
+    );
+    @!connections.end;
+}
+
+method close_connection(
+    Str :$name,
+) returns Bool {
+    my Bool $rv = False;
+    for @!connections -> %c {
+       if %c<name> eq $name {
+           %c<name> ~= q{_};
+           %c<close> = %c<conn>.close // False;
+           $rv = True if %c<close>;
+           last;
+       }
+    }
+    $rv;
+}
+
+method check_connection( Str :$name ) returns Bool {
+    for @!connections -> %c {
+       if %c<name> eq $name {
+           if %c<conn>.native-descriptor {
+               return True;
+           }
+           else {
+               %c<name> ~= q{_};
+           }
+           last;
+       }
+    }
+    False;
+}
+
+method fetch_connection( Str  :$name ) returns Hash {
+    my %ret;
+    for @!connections -> %c {
+       if ( %c<name> eq $name ) {
+           if %c<conn>.native-descriptor {
+               %ret = %c;
+           }
+           else {
+               %c<name> ~= q{_};
+           }
+           last;
+       }
+    }
+    %ret;
 }
 
 # :simple
