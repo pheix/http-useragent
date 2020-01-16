@@ -1,0 +1,27 @@
+image: rakudo-star:latest
+
+stages:
+  - do-test
+  - do-install
+
+before_script:
+  - perl6 --version
+  - zef update
+  - zef --debug --depsonly install git://github.com/ugexe/zef.git
+  - zef upgrade zef
+  - zef uninstall HTTP::UserAgent
+  - zef --version
+
+test-this-proj:
+  stage: do-test
+  script:
+    - prove6 ./t
+  only:
+    - keepalive_dev
+
+install-this-proj:
+  stage: do-install
+  script:
+    - zef install .
+  only:
+    - keepalive_dev

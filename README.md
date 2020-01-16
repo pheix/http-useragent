@@ -1,12 +1,10 @@
-# HTTP::UserAgent [![Build Status](https://travis-ci.org/sergot/http-useragent.svg?branch=master)](https://travis-ci.org/sergot/http-useragent)
-
-Web user agent class for Perl 6.
-
+# HTTP::UserAgent
+Web user agent class for Raku (formerly known as Perl 6).
 
 
 ## Usage
 
-```Perl6
+```Perl
 use HTTP::UserAgent;
 
 my $ua = HTTP::UserAgent.new;
@@ -79,3 +77,7 @@ Please see the documentation links listed below:
 - make SSL support more reliable
 - add throwing exception on failing SSL
 - more tests
+
+### Credits
+
+[https://github.com/sergot/http-useragent](https://github.com/sergot/http-useragent)
