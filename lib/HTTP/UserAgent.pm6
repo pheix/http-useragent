@@ -315,7 +315,6 @@ method get-response(HTTP::Request $request, Connection $conn, Bool :$bin) return
         $first-chunk;
     }
 
-
     my HTTP::Response $response = HTTP::Response.new($header-chunk);
     $response.request = $request;
 
@@ -323,7 +322,6 @@ method get-response(HTTP::Request $request, Connection $conn, Bool :$bin) return
         if !$msg-body-pos.defined {
             X::HTTP::Internal.new(rc => 500, reason => "server returned no data").throw;
         }
-
 
         my $content = $first-chunk.subbuf($msg-body-pos);
         # Turn the inner exceptions to ours
@@ -349,7 +347,6 @@ method get-response(HTTP::Request $request, Connection $conn, Bool :$bin) return
     }
     return $response;
 }
-
 
 proto method get-connection(|c) { * }
 
