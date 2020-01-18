@@ -1,1 +1,4 @@
 t/dat/foo.txt         eol=lf
+*.p6  gitlab-language=perl
+*.pl6 gitlab-language=perl
+*.pm6 gitlab-language=perl
