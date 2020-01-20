@@ -15,6 +15,8 @@ http-useragent:
   stage: do-install-and-test
   script:
     - zef install .
+    - export NETWORK_TESTING=1
     - prove6 ./t
+    - unset NETWORK_TESTING
   only:
     - keepalive_dev
