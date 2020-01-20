@@ -2,7 +2,6 @@
 
 use v6;
 use Test;
-use lib  './lib';
 use HTTP::UserAgent;
 
 plan 3;
