@@ -16,7 +16,7 @@ http-useragent:
   script:
     - zef install .
     - export NETWORK_TESTING=1
-    - prove6 ./t
+    - prove -ve 'perl6 -Ilib'
     - unset NETWORK_TESTING
   only:
     - keepalive_dev
