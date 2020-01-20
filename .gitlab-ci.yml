@@ -4,6 +4,7 @@ stages:
   - do-install-and-test
 
 before_script:
+  - apt-get update && apt-get install -y openssl libssl-dev
   - perl6 --version
   - zef update
   - zef --debug --depsonly install git://github.com/ugexe/zef.git
