@@ -459,11 +459,7 @@ method use-auth(HTTP::Request $request) {
     $!auth_login.defined && $!auth_password.defined;
 }
 
-method store_connection(
-    Str :$name,
-    HTTP::Request :$request,
-    Connection :$conn
-) returns UInt {
+method store_connection(Str :$name!, Connection :$conn!) returns UInt {
     @!connections.push(
         %(
             name => $name,
@@ -473,29 +469,26 @@ method store_connection(
     @!connections.end;
 }
 
-method close_connection(
-    Str :$name,
-) returns Bool {
+method close_connection(Str :$name!, Bool :$skipclean) returns Bool {
     my Bool $rv = False;
     for @!connections -> %c {
        if %c<name> eq $name {
-           %c<name> ~= q{_};
+           %c<name> = q{};
            %c<close> = %c<conn>.close // False;
            $rv = True if %c<close>;
            last;
        }
     }
+
+    self.cleanup_connections if not $skipclean;
     $rv;
 }
 
-method check_connection( Str :$name ) returns Bool {
+method check_connection(Str :$name!) returns Bool {
     for @!connections -> %c {
        if %c<name> eq $name {
            if %c<conn>.native-descriptor {
                return True;
-           }
-           else {
-               %c<name> ~= q{_};
            }
            last;
        }
@@ -503,20 +496,22 @@ method check_connection( Str :$name ) returns Bool {
     False;
 }
 
-method fetch_connection( Str  :$name ) returns Hash {
+method fetch_connection(Str :$name!) returns Hash {
     my %ret;
     for @!connections -> %c {
        if ( %c<name> eq $name ) {
            if %c<conn>.native-descriptor {
                %ret = %c;
            }
-           else {
-               %c<name> ~= q{_};
-           }
            last;
        }
     }
     %ret;
+}
+
+method cleanup_connections returns UInt {
+    @!connections = @!connections.map({$_ if not $_<name> eq Empty});
+    @!connections.elems;
 }
 
 # :simple
