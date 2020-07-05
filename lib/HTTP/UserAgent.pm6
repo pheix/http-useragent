@@ -474,7 +474,12 @@ method close_connection(Str :$name!, Bool :$skipclean) returns Bool {
     for @!connections -> %c {
        if %c<name> eq $name {
            %c<name> = q{};
-           %c<close> = %c<conn>.close // False;
+           if %c<conn>.native-descriptor {
+               %c<close> = %c<conn>.close
+           }
+           else {
+               %c<close> = False;
+           }
            $rv = True if %c<close>;
            last;
        }
