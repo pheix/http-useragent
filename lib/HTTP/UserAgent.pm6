@@ -474,7 +474,8 @@ method close_connection(Str :$name!, Bool :$skipclean) returns Bool {
     for @!connections -> %c {
        if %c<name> eq $name {
            %c<name> = q{};
-           if %c<conn>.native-descriptor {
+           if %c<conn>.^find_method('close').defined ||
+              %c<conn>.ssl.defined {
                %c<close> = %c<conn>.close
            }
            else {
@@ -492,7 +493,8 @@ method close_connection(Str :$name!, Bool :$skipclean) returns Bool {
 method check_connection(Str :$name!) returns Bool {
     for @!connections -> %c {
        if %c<name> eq $name {
-           if %c<conn>.native-descriptor {
+           if %c<conn>.^find_method('native-descriptor').defined ||
+              %c<conn>.ssl.defined {
                return True;
            }
            last;
@@ -502,10 +504,11 @@ method check_connection(Str :$name!) returns Bool {
 }
 
 method fetch_connection(Str :$name!) returns Hash {
-    my %ret;
+    my %ret = Empty;
     for @!connections -> %c {
        if ( %c<name> eq $name ) {
-           if %c<conn>.native-descriptor {
+           if %c<conn>.^find_method('native-descriptor').defined ||
+              %c<conn>.ssl.defined {
                %ret = %c;
            }
            last;
