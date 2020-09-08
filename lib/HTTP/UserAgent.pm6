@@ -208,6 +208,16 @@ method request(
         }
     }
 
+    for $response.header.fields -> $field {
+        if $field.name ~~ m:i:s/^ connection $/ {
+            if $field.values.join ~~ m:i:s/^ close $/ {
+                self.close_connection(name => $conn_name);
+                "force close kept alive connection $conn_name due to server response\n".say if $.debug;
+            }
+            last;
+        }
+    };
+
     return $response;
 }
 
