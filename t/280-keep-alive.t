@@ -49,29 +49,34 @@ subtest {
 
 subtest {
     for ^conn_num -> $conn_index {
+        my Str $conname = 'connection' ~ $conn_index;
         for @req -> $r {
             my $conn = $ua.get-connection($r);
 
-            ok ($ua.store_connection(:name($conn_index.Str), :conn($conn)) >= 0),
-                'connection <' ~ $conn_index ~ '> is stored';
+            ok ($ua.store_connection(:name($conname), :conn($conn)) >= 0),
+                'connection <' ~ $conname ~ '> is stored';
         }
     }
 
     for ^conn_num -> $conn_index {
+        my Str $conname = 'connection' ~ $conn_index;
         for @req -> $r {
-            my Bool $validconn = $ua.check_connection(:name($conn_index.Str));
 
-            ok $validconn, 'connection <' ~ $conn_index ~ '> is checked';
+            my Bool $validconn = $ua.check_connection(:name($conname));
+
+            ok $validconn, 'connection <' ~ $conname ~ '> is checked';
 
             if $validconn {
-                is $ua.request($r, :conn_name($conn_index.Str)).code, 200,
-                    'connection <' ~ $conn_index ~ '> is reused';
+                $r.header.field(Connection => 'Keep-Alive');
 
-                ok $ua.close_connection(:name($conn_index.Str), :skipclean(True)),
-                    'connection <' ~ $conn_index ~ '> is closed';
+                is $ua.request($r, :conn_name($conname)).code, 200,
+                    'connection <' ~ $conname ~ '> is reused';
+
+                ok $ua.close_connection(:name($conname), :skipclean(True)),
+                    'connection <' ~ $conname ~ '> is closed';
             }
             else {
-                skip 'no connection <' ~ $conn_index.Str ~ '> is stored', 2;
+                skip 'no connection <' ~ $conname.Str ~ '> is stored', 2;
             }
         }
     }
