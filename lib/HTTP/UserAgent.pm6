@@ -148,6 +148,8 @@ method request(
 ) returns HTTP::Response {
     my %stored_conn;
 
+    my Bool $keepalive = False;
+
     my HTTP::Response $response;
     my Connection     $conn;
 
@@ -168,14 +170,27 @@ method request(
             :rc('No active connection <' ~ $conn_name ~ '> is stored')
         ).throw unless %stored_conn;
 
-        $conn = %stored_conn<conn>;
+        $conn      = %stored_conn<conn>;
+        $keepalive = True;
     }
     else {
         $conn = self.get-connection($request);
     }
 
     if $conn.send-request($request) {
-         $response = self.get-response($request, $conn, :$bin);
+        $response = self.get-response($request, $conn, :$bin, :keepalive($keepalive));
+
+        if !$response {
+            self.close_connection(:name($conn_name));
+
+            # "keep-alive connection <$conn_name> is dead and closed, try close connection".say;
+
+            $conn = self.get-connection($request);
+
+            if $conn.send-request($request) {
+                $response = self.get-response($request, $conn, :$bin);
+            }
+        }
     }
     $conn.close unless $conn_name.defined;
 
@@ -212,13 +227,12 @@ method request(
         for $response.header.fields -> $field {
             if $field.name ~~ m:i:s/^ connection $/ {
                 if $field.values.join ~~ m:i:s/^ close $/ {
-                    "close connection <$conn_name>".say;
                     self.close_connection(name => $conn_name);
                     "force close kept alive connection $conn_name due to server response\n".say if $.debug;
                 }
                 last;
             }
-        };    
+        };
     }
 
     return $response;
@@ -291,13 +305,23 @@ method get-chunked-content(Connection $conn, Blob $content is rw ) returns Blob 
     return $content;
 }
 
-method get-response(HTTP::Request $request, Connection $conn, Bool :$bin) returns HTTP::Response {
+method get-response(
+    HTTP::Request $request,
+    Connection $conn,
+    Bool :$bin,
+    Bool :$keepalive
+) returns HTTP::Response {
     my Blob[uint8] $first-chunk = Blob[uint8].new;
     my $msg-body-pos;
 
     CATCH {
         when X::HTTP::NoResponse {
-            X::HTTP::Internal.new(rc => 500, reason => "server returned no data").throw;
+            if $keepalive {
+                return Nil;
+            }
+            else {
+                X::HTTP::Internal.new(rc => 500, reason => "server returned no data").throw;
+            }
         }
         when /'Connection reset by peer'/ {
             X::HTTP::Internal.new(rc => 500, reason => "Connection reset by peer").throw;
