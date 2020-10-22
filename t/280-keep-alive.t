@@ -62,11 +62,7 @@ subtest {
         my Str $conname = 'connection' ~ $conn_index;
         for @req -> $r {
 
-            my Bool $validconn = $ua.check_connection(:name($conname));
-
-            ok $validconn, 'connection <' ~ $conname ~ '> is checked';
-
-            if $validconn {
+            if $ua.check_connection(:name($conname)) {
                 $r.header.field(Connection => 'Keep-Alive');
 
                 is $ua.request($r, :conn_name($conname)).code, 200,
@@ -76,7 +72,7 @@ subtest {
                     'connection <' ~ $conname ~ '> is closed';
             }
             else {
-                skip 'no connection <' ~ $conname.Str ~ '> is stored', 2;
+                skip 'no active connection <' ~ $conname.Str ~ '>', 2;
             }
         }
     }
