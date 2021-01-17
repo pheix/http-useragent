@@ -9,7 +9,7 @@ before_script:
   - zef update
   - zef --debug --depsonly install git://github.com/ugexe/zef.git
   - zef upgrade zef
-  - zef uninstall HTTP::UserAgent
+# - zef uninstall HTTP::UserAgent
   - zef --version
 
 http-useragent:
